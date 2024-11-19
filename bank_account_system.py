@@ -171,9 +171,9 @@ class BankAccountGUI:
         #self.main_window.mainloop()
 
     def open_create_account_window(self):
-        create_window = tk.Toplevel(self.main_window)
-        create_window.title("Create Account")
-        frame = tk.Frame(create_window)
+        self.create_window = tk.Toplevel(self.main_window)
+        self.create_window.title("Create Account")
+        frame = tk.Frame(self.create_window)
         frame.pack()
 
         userinfoframe = tk.LabelFrame(frame, text="Create Account")
@@ -213,7 +213,7 @@ class BankAccountGUI:
         create_btn.grid(row=4, column=0)
 
     def show_message(self, event):
-        messagebox.showinfo(title="Info", message="Only numbers and letters are allowed for the account number ,Account number must be between 6 and 10 characters")
+        messagebox.showinfo(title="Info", message="Account number must be between 6 and 10 characters. Only numbers and letters are allowed")
     def get_create_account(self):
         account_name = self.enter_name.get()
         account_number = self.enter_number.get()
@@ -237,6 +237,8 @@ class BankAccountGUI:
                 new_account = self.bank_system.create_account(account_name, account_number, initial_balance, account_email)
                 if new_account:
                     messagebox.showinfo(title="Success", message="Account created successfully!")
+                    self.create_window.destroy()
+
             except ValueError as e:
                 messagebox.showerror(title="Error", message=str(e))
         else:
@@ -445,6 +447,6 @@ class BankAccountGUI:
             messagebox.showinfo(title="Logged Out",message= "You have been logged out.")
 
 
-if __name__ == "__main__":
-    bankgui = BankAccountGUI()
-    bankgui.main_window.mainloop()
+#if __name__ == "__main__":
+bankgui = BankAccountGUI()
+bankgui.main_window.mainloop()
