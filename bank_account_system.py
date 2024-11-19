@@ -447,6 +447,6 @@ class BankAccountGUI:
             messagebox.showinfo(title="Logged Out",message= "You have been logged out.")
 
 
-#if __name__ == "__main__":
+
 bankgui = BankAccountGUI()
 bankgui.main_window.mainloop()
