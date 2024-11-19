@@ -16,20 +16,38 @@ class Account:
         self.transactionlist = []
 
     def deposit(self, amount):
+      try:
         #if not amount.replace('.', '', 1).isdigit():
             #tkinter.messagebox.showerror("Amount must be a number.")
         amount=float(amount)
-        if amount<=0:
-            tkinter.messagebox.showerror(title="Error",message="Number should be positive")
+        #if amount<=0:
+            #tkinter.messagebox.showerror(title="Error",message="Number should be positive")
+           # return
+
 
 
         self.account_balance += amount
         #self.transactionlist.append("Deposit: $" + amount)
-        self.transactionlist.append(f"Deposit: ${amount:.2f}")  # Convert float to string with 2 decimal place
-        return self.account_balance
+        self.transactionlist.append(f"Deposit: ${amount:.2f}") # Convert float to string with 2 decimal place
+      except ValueError:
+        tkinter.messagebox.showerror(title="Error", message="Invalid input. Please enter a number.")
+      except Exception as e:
+          print(f"Unexpected error: {e}")  # Debugging statement,e is the exception object captured in the except block. It contains details about the error, such as the error type and message.
+          tkinter.messagebox.showerror(title="Error", message=f"An unexpected error occurred: {e}")#Unexpected error: could not convert string to float: 'invalid_number'
+
+          return self.account_balance
 
     def withdrawal(self, amount):
+        if not amount.isdigit():
+            tkinter.messagebox.showerror(title="Error", message="Only numbers are allowed.")
+            return
         amount=float(amount)
+        if amount <= 0:
+            tkinter.messagebox.showerror(title="Error", message="Number should be positive")
+            return None
+        if amount > 999_999:  # Maximum limit of 6 digits
+            tkinter.messagebox.showerror(title="Error", message="Amount cannot exceed 6 digits (999,999).")
+            return
         if self.account_balance >= amount:
             self.account_balance -= amount
             self.transactionlist.append(f"Withdrawal: ${amount:.2f}")
@@ -53,37 +71,56 @@ class BankAction:
         try:
             with open(self.filename, 'r') as csvfile:
                 csvreader = csv.reader(csvfile)
+                #self.accounts.clear()#
                 for row in csvreader:
-                    if len(row) >= 4:  # Ensure the row has at least 4 elements
-                        account_name, account_number, account_balance, account_email = row[:4]
-                        account = Account(account_name, account_number, account_balance, account_email)
+                    #print(f"Read row: {row}")#
+                    if len(row) == 0:  # Skip completely empty rows
+                        continue
+                    if len(row) >= 3:  # Allow rows with at least 3 elements
+
+                        account_name, account_number, account_balance = row[:3] # Handle mandatory fields
+
+                        # Handle optional email
+                        if len(row) > 3:
+                            account_email = row[3]
+                        else:
+                            return None
+
+                        #account_name, account_number, account_balance, account_email = row[:4]
+                        account = Account(account_name, account_number, account_balance, account_email)#creates an account object using extracted data
                         self.accounts[account_number] = account
                     else:
-                        print(f"Skipping invalid row: {row}")
+                        pass
+                        #print(f"Skipping invalid row: {row}")
+            #print(f"Accounts after reading: {self.accounts}")#
         except FileNotFoundError:
             pass
 
     def save_accounts(self):
         with open(self.filename, 'w') as csvfile:
             writer = csv.writer(csvfile)
-            for account in self.accounts.values():
+            for account in self.accounts.values():#Each value (an account object) is assigned to the variable account for processing within the loop.
+               # print(f"Writing account: {account.account_name}, {account.account_number}, {account.account_balance}, {account.account_email_id}")  # Debug statement
                 writer.writerow([account.account_name, account.account_number, account.account_balance, account.account_email_id])
-
+                #print(f"Writing account: {account.account_name}, {account.account_number}, {account.account_balance}, {account.account_email_id}")  # Debug statement
     def create_account(self, account_name, account_number, initial_balance, account_email_id=None):
+        print("create account called")
+        print(self.read_accounts())
         if account_number in self.accounts:
-            tkinter.messagebox.showerror("Error", "Account number already exists")
+            tkinter.messagebox.showerror(title="Error", message="Account number already exists")
             return None
         if not account_number.isalnum():
             tkinter.messagebox.showerror(title="Error",message="Account number can only contain letters and numbers")
             return None
         account = Account(account_name, account_number, initial_balance, account_email_id)
+        #print(f"Created account: {account.account_name}, {account.account_number}, {account.account_balance}, {account.account_email_id}")  # Debug statement
         self.accounts[account_number] = account
         self.save_accounts()
         return account
 
     def login(self, account_name, account_number):
         account = self.accounts.get(account_number)
-        if account and account.account_name == account_name:
+        if account and account.account_name.lower() == account_name.lower():
             return account
         else:
             return None
@@ -105,7 +142,7 @@ class BankAccountGUI:
         frame.pack(fill=tk.BOTH, expand=True)
 
         # Load the image and place it on the side
-        image_path = "Bank.png"  # Adjust the path to your image
+        image_path = "Bank.png"  # Adjust the path to  image
         side_image = Image.open(image_path)
         side_image = side_image.resize((400, 400), Image.Resampling.LANCZOS)
         side_photo = ImageTk.PhotoImage(side_image)
@@ -176,8 +213,7 @@ class BankAccountGUI:
         create_btn.grid(row=4, column=0)
 
     def show_message(self, event):
-        messagebox.showinfo(title="Info", message="Only numbers and letters are allowed for the account number.")
-
+        messagebox.showinfo(title="Info", message="Only numbers and letters are allowed for the account number ,Account number must be between 6 and 10 characters")
     def get_create_account(self):
         account_name = self.enter_name.get()
         account_number = self.enter_number.get()
@@ -186,6 +222,18 @@ class BankAccountGUI:
 
         if account_number and account_name and initial_balance:
             try:
+                if not account_name.isalpha():
+                    messagebox.showerror(title="Error",message="Enter valid name")
+                    return None
+                if account_number.isdigit():
+                    messagebox.showerror(title="Error", message="Enter valid number")
+                    return None
+
+
+
+                if not (6 <= len(account_number) <= 10):
+                    messagebox.showerror(title="Error", message="Account number must be between 6 and 10 characters")
+                    return # Exit the method if length check fails
                 new_account = self.bank_system.create_account(account_name, account_number, initial_balance, account_email)
                 if new_account:
                     messagebox.showinfo(title="Success", message="Account created successfully!")
@@ -236,7 +284,7 @@ class BankAccountGUI:
         tk.Button(self.dashboard_window, text="Transaction History", width=20, command=self.view_transaction_history,bg="dodger blue", fg="white").pack(pady=5)
 
         graph_btn = tk.Button(self.dashboard_window, text="View Transaction Graph",
-                              command=self.show_transaction_graph, bg="dodger blue", fg="white")
+                              command=self.show_transaction_graph, width=20,bg="dodger blue", fg="white")
         graph_btn.pack(pady=10)
 
         tk.Button(self.dashboard_window, text="Logout", width=20, command=self.logout,bg="dodger blue", fg="white").pack(pady=5)
@@ -253,18 +301,28 @@ class BankAccountGUI:
 
         tk.Button(self.transaction_window, text="Deposit", command=self.deposit).grid(row=1, columnspan=2, pady=10)
 
+
     def deposit(self):
 
             #self.dashboard_window=tk.Toplevel(self.main_window)
+
+
             if self.current_account is None:
                 messagebox.showerror(title="Error", message="No account is logged in!")
                 return
             try:
                 amount = float(self.transaction_amount_entry.get())
+                if amount <= 0:
+                    tkinter.messagebox.showerror(title="Error", message="Number should be positive")
+                    return None
+                if amount > 999_999:  # Maximum limit of 6 digits
+                    tkinter.messagebox.showerror(title="Error", message="Amount cannot exceed 6 digits (999,999).")
+                    return None
                 self.current_account.deposit(amount)
                 self.bank_system.save_accounts()
+                self.reopen_dashboard()
                 messagebox.showinfo(title="Success",message= f"${amount} deposited successfully!")
-                #self.reopen_dashboard()
+                self.reopen_dashboard()
                 self.transaction_window.destroy()
 
             except ValueError:
@@ -284,56 +342,78 @@ class BankAccountGUI:
 
     def withdraw(self):
             try:
-                amount = float(self.transaction_amount_entry.get())
+
+                amount = self.transaction_amount_entry.get()
+                if not amount.isdigit():
+                    tkinter.messagebox.showerror(title="Error", message="Enter valid input")
+                    return None
+
+
+
                 self.current_account.withdrawal(amount)
                 self.bank_system.save_accounts()
                 #messagebox.showinfo("Success", f"${amount} withdrawn successfully!")
-                #self.reopen_dashboard()
+                self.reopen_dashboard()
                 self.transaction_window.destroy()
             except ValueError as e:
-                messagebox.showerror(title="Error",message= str(e))
+                messagebox.showerror(title="Error",message= str(e))#This provides the error message that was generated when the exception occurred
 
     def view_balance(self):
-            #self.reopen_dashboard()
+
             balance = self.current_account.get_balance()
+
             messagebox.showinfo(title="Current Balance", message=f"Your current balance is: ${balance:.2f}")
 
+            self.reopen_dashboard()
+
     def view_transaction_history(self):
+            #self.reopen_dashboard()
             history = self.current_account.get_transaction_history()
             history_text = "\n".join(history) if history else "No transactions yet."
-            messagebox.showinfo("Transaction History",  history_text)
+            #Use "\n".join(history) to concatenate the list of transactions into a single string with each transaction on a new line.
+            messagebox.showinfo(title="Transaction History",message=  history_text)
+
+            self.reopen_dashboard()
 
     def reopen_dashboard(self):
         # Close the transaction window if it's open
-        if hasattr(self, 'transaction_window') and self.transaction_window.winfo_exists():
-            self.transaction_window.destroy()
 
-        # Reopen the dashboard window
-        if not hasattr(self, 'dashboard_window') or not self.dashboard_window.winfo_exists():
+            # Destroy and reopen the dashboard
+            if hasattr(self, 'dashboard_window') and self.dashboard_window.winfo_exists():#Checks if the self object has an attribute named dashboard_window.
+                self.dashboard_window.destroy()
             self.open_account_dashboard()
 
     def show_transaction_graph(self):
         if not self.current_account:
-            tk.messagebox.showerror("Error", "No account is logged in.")
+            tk.messagebox.showerror(title="Error", message="No account is logged in.")
             return
 
         # Prepare data for the graph
         transactions = self.current_account.get_transaction_history()
         balances = []
-        balance = self.current_account.get_balance()  # Start with the current balance
+        current_balance = self.current_account.account_balance  # Start with the current balance
+        initial_balance = current_balance
 
-        # Build balances list based on transaction history
-        for transaction in reversed(transactions):  # Reverse to get the order correctly
+        for transaction in reversed(transactions):
             if transaction.startswith("Deposit"):
                 amount = float(transaction.split("$")[1])
-                balance -= amount
+                initial_balance -= amount
             elif transaction.startswith("Withdrawal"):
                 amount = float(transaction.split("$")[1])
+                initial_balance += amount
+        balances.append(initial_balance)
+        # Build balances list based on transaction history
+        balance = initial_balance
+        for transaction in transactions:
+            if transaction.startswith("Deposit"):
+                amount = float(transaction.split("$")[1])
                 balance += amount
-            balances.insert(0, balance)  # Insert at the beginning to maintain chronological order
-
-        # Add the current balance to the end of the list
-        balances.append(self.current_account.get_balance())
+            elif transaction.startswith("Withdrawal"):
+                amount = float(transaction.split("$")[1])
+                balance -= amount
+            balances.append(balance) # Append the updated balance to the list
+            #balances.insert(0,initial_balance)
+        # Create labels for the x-axis
         x_labels = [f"Transaction {i + 1}" for i in range(len(balances))]
 
         # Create a new window for the graph
@@ -357,6 +437,7 @@ class BankAccountGUI:
         # Add a close button
         close_btn = tk.Button(graph_window, text="Close", command=graph_window.destroy)
         close_btn.pack(pady=10)
+
 
     def logout(self):
             self.current_account = None
