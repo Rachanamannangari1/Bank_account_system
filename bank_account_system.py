@@ -38,9 +38,9 @@ class Account:
           return self.account_balance
 
     def withdrawal(self, amount):
-        if not amount.isdigit():
-            tkinter.messagebox.showerror(title="Error", message="Only numbers are allowed.")
-            return
+        #if not amount.isdigit():
+            #tkinter.messagebox.showerror(title="Error", message="Only numbers are allowed.")
+            #return
         amount=float(amount)
         if amount <= 0:
             tkinter.messagebox.showerror(title="Error", message="Number should be positive")
@@ -72,6 +72,8 @@ class BankAction:
             with open(self.filename, 'r') as csvfile:
                 csvreader = csv.reader(csvfile)
                 #self.accounts.clear()#
+
+                next(csvreader, None)  # Skip the first line (header)
                 for row in csvreader:
                     #print(f"Read row: {row}")#
                     if len(row) == 0:  # Skip completely empty rows
@@ -97,15 +99,18 @@ class BankAction:
             pass
 
     def save_accounts(self):
-        with open(self.filename, 'w') as csvfile:
+        with open(self.filename, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
+            writer.writerow(["Account_name", "Account_number", "Account_balance", "Account_email"])
+
             for account in self.accounts.values():#Each value (an account object) is assigned to the variable account for processing within the loop.
                # print(f"Writing account: {account.account_name}, {account.account_number}, {account.account_balance}, {account.account_email_id}")  # Debug statement
                 writer.writerow([account.account_name, account.account_number, account.account_balance, account.account_email_id])
                 #print(f"Writing account: {account.account_name}, {account.account_number}, {account.account_balance}, {account.account_email_id}")  # Debug statement
     def create_account(self, account_name, account_number, initial_balance, account_email_id=None):
         print("create account called")
-        print(self.read_accounts())
+        #print(self.read_accounts())
+        #print(self.accounts)
         if account_number in self.accounts:
             tkinter.messagebox.showerror(title="Error", message="Account number already exists")
             return None
@@ -120,6 +125,7 @@ class BankAction:
 
     def login(self, account_name, account_number):
         account = self.accounts.get(account_number)
+
         if account and account.account_name.lower() == account_name.lower():
             return account
         else:
@@ -143,13 +149,13 @@ class BankAccountGUI:
 
         # Load the image and place it on the side
         image_path = "Bank.png"  # Adjust the path to  image
-        side_image = Image.open(image_path)
-        side_image = side_image.resize((400, 400), Image.Resampling.LANCZOS)
-        side_photo = ImageTk.PhotoImage(side_image)
+        side_image = Image.open(image_path)#Opens the image using the Pillow library (Image.open). This loads the image into a Python object (side_image).
+        side_image = side_image.resize((400, 400), Image.Resampling.LANCZOS)#Resizes the image to a 400x400 pixel size using the LANCZOS filter, which is a high-quality resampling algorithm (good for downscaling images).
+        side_photo = ImageTk.PhotoImage(side_image)#Converts the Pillow image (side_image) to a format that tkinter can work with, which is PhotoImage. This is necessary for displaying images in a tkinter label or other widgets
 
         # Label to hold the image
-        image_label = tk.Label(frame, image=side_photo)
-        image_label.image = side_photo  # Keep a reference to avoid garbage collection
+        image_label = tk.Label(frame, image=side_photo)#Creates a Label widget inside the frame that will display the image (side_photo). The image=side_photo argument tells the label to show the image.
+        image_label.image = side_photo  # Keep a reference to avoid garbage collection,Keeps a reference to the image. In tkinter
         image_label.pack(side=tk.LEFT, padx=20, pady=20)
 
         # Create buttons and other widgets in the remaining space
@@ -160,7 +166,7 @@ class BankAccountGUI:
 
         login_btn = tk.Button(button_frame, text='Login', command=self.open_login_window, font=("Helvetica", 16),bg="dodger blue", fg="white")
         #login_btn.pack(pady=10)
-        login_btn.place(relx=0.4, rely=0.4, anchor=tk.CENTER)
+        login_btn.place(relx=0.4, rely=0.4, anchor=tk.CENTER)#Positions the button on the screen using the place() method. This method positions the button at 40% of the width (relx=0.4) and 40% of the height (rely=0.4) of the parent frame. The anchor=tk.CENTER argument ensures the button is centered at that point.
 
         create_account_btn = tk.Button(button_frame, text='Sign Up', command=self.open_create_account_window,
                                        font=("Helvetica", 16),bg="dodger blue", fg="white")
@@ -200,7 +206,8 @@ class BankAccountGUI:
 
         account_email_label = tk.Label(userinfoframe, text="Account Email")
         account_email_label.grid(row=2, column=0)
-        self.enter_email = tk.Entry(userinfoframe,width=40)
+        initial_text = StringVar(value="Optional")
+        self.enter_email = tk.Entry(userinfoframe,width=40,textvariable=initial_text)
         self.enter_email.grid(row=2, column=1)
 
         account_balance_label = tk.Label(userinfoframe, text="Account Balance")
@@ -213,7 +220,7 @@ class BankAccountGUI:
         create_btn.grid(row=4, column=0)
 
     def show_message(self, event):
-        messagebox.showinfo(title="Info", message="Account number must be between 6 and 10 characters. Only numbers and letters are allowed")
+        messagebox.showinfo(title="Info", message="Account number must be between 6 and 10 characters, case-sensitive, and only contain numbers and letters.")
     def get_create_account(self):
         account_name = self.enter_name.get()
         account_number = self.enter_number.get()
@@ -268,8 +275,10 @@ class BankAccountGUI:
         account_name = self.enter_name.get()
         account_number = self.enter_number.get()
         account = self.bank_system.login(account_name, account_number)
+        #print("account is",account)
         if account:
             self.current_account = account
+            print(self.current_account)
             self.login_window.destroy()
             self.open_account_dashboard()
         else:
@@ -292,7 +301,7 @@ class BankAccountGUI:
         tk.Button(self.dashboard_window, text="Logout", width=20, command=self.logout,bg="dodger blue", fg="white").pack(pady=5)
 
 
-        print("After deposit/withdraw, checking dashboard window status...")
+        #print("After deposit/withdraw, checking dashboard window status...")
     def open_deposit_window(self):
         self.transaction_window = tk.Toplevel(self.main_window)
         self.transaction_window.title("Deposit")
@@ -316,9 +325,11 @@ class BankAccountGUI:
                 amount = float(self.transaction_amount_entry.get())
                 if amount <= 0:
                     tkinter.messagebox.showerror(title="Error", message="Number should be positive")
+                    self.reopen_dashboard()
                     return None
                 if amount > 999_999:  # Maximum limit of 6 digits
                     tkinter.messagebox.showerror(title="Error", message="Amount cannot exceed 6 digits (999,999).")
+                    self.reopen_dashboard()
                     return None
                 self.current_account.deposit(amount)
                 self.bank_system.save_accounts()
@@ -329,6 +340,7 @@ class BankAccountGUI:
 
             except ValueError:
                 messagebox.showerror(title="Error",message= "Invalid amount.")
+                self.reopen_dashboard()
 
     def open_withdraw_window(self):
 
@@ -345,10 +357,13 @@ class BankAccountGUI:
     def withdraw(self):
             try:
 
-                amount = self.transaction_amount_entry.get()
-                if not amount.isdigit():
-                    tkinter.messagebox.showerror(title="Error", message="Enter valid input")
-                    return None
+                amount = float(self.transaction_amount_entry.get())
+                #if not amount.isdigit():
+                    #tkinter.messagebox.showerror(title="Error", message="Enter valid input")
+                    #self.reopen_dashboard()
+                    #return None
+
+
 
 
 
@@ -358,7 +373,7 @@ class BankAccountGUI:
                 self.reopen_dashboard()
                 self.transaction_window.destroy()
             except ValueError as e:
-                messagebox.showerror(title="Error",message= str(e))#This provides the error message that was generated when the exception occurred
+                messagebox.showerror(title="Error",message= "invalid input")#This provides the error message that was generated when the exception occurred
 
     def view_balance(self):
 
@@ -424,7 +439,7 @@ class BankAccountGUI:
 
         # Create the Matplotlib figure
         fig = Figure(figsize=(6, 4), dpi=100)
-        ax = fig.add_subplot(111)
+        ax = fig.add_subplot(111)#Adds an axes (plotting area) to the figure.
         ax.plot(x_labels, balances, marker='o', linestyle='-', color='blue')
         ax.set_title("Account Transaction History")
         ax.set_xlabel("Transactions")
