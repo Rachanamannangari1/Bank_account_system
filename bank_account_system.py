@@ -96,7 +96,7 @@ class BankAction:
                         #print(f"Skipping invalid row: {row}")
             #print(f"Accounts after reading: {self.accounts}")#
         except FileNotFoundError:
-            pass
+            messagebox.showerror(title="Critical Error:",message="Accounts file not found. Please ensure the file exists")
 
     def save_accounts(self):
         with open(self.filename, 'w', newline='') as csvfile:
@@ -278,7 +278,7 @@ class BankAccountGUI:
         #print("account is",account)
         if account:
             self.current_account = account
-            print(self.current_account)
+           #print(self.current_account)
             self.login_window.destroy()
             self.open_account_dashboard()
         else:
